@@ -21,7 +21,23 @@ class SorxParser(argparse.ArgumentParser):
 
 
 def build_flags():
-    parser = SorxParser(prog="sorx", description="A tool for analyzing CORS headers", add_help=True)
+    parser = SorxParser(
+        prog="sorx",
+        description="A tool for analyzing CORS headers",
+        add_help=True,
+        formatter_class=lambda prog: argparse.RawDescriptionHelpFormatter(
+            prog,
+            max_help_position=30,
+            width=120,
+        ),
+        epilog="""Examples:
+    sorx -u https://example.com                  # Simple scan
+    sorx -u https://example.com -m deep          # Enable active mode
+    sorx -u https://example.com -o result.txt    # Output in TXT
+    sorx -u https://example.com -j result.json   # Output in JSON
+    sorx -l targets.txt -m quick -t 20           # Scan a list of targets
+    """,
+    )
 
     parser.add_argument("-v", "--version", action="store_true", help="Show version and check for updates")
     parser.add_argument("-u", "--url", dest="url", type=str, help="Target URL")
@@ -31,7 +47,7 @@ def build_flags():
     parser.add_argument("-D", "--data", dest="data", type=str, help="Request body data")
     parser.add_argument("--timeout", dest="timeout", type=int, default=6, help="Request timeout in seconds (default: 6)")
     parser.add_argument("-t", "--thread", dest="thread", type=int, default=15, help="Number of threads (default: 15)")
-    parser.add_argument("-m", "--mode", dest="mode", choices=["quick", "normal", "deep"], default=None, help="Enable active CORS fuzzing: quick, normal, or deep. Omit for passive mode.")
+    parser.add_argument("-m", "--mode", dest="mode", choices=["quick", "normal", "deep"], metavar="MODE", default=None, help="Enable active CORS fuzzing: [quick, normal, deep]. Omit for passive mode.")
     parser.add_argument("-o", "--output", dest="output", type=str, help="Output file path")
     parser.add_argument("-j", "--json", dest="json", type=str, help="Output results in JSON format")
 

@@ -4,8 +4,9 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "sorx"
-version = "0.1.0"
+version = "0.1.1"
 description = "A tool for analyzing CORS headers"
+readme = "README.md"
 dependencies = [
     "PyYAML>=6.0",
     "requests>=2.32",

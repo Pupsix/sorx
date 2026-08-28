@@ -4,7 +4,7 @@
 
 `sorx` is a CLI tool for analyzing CORS configurations and detecting potentially security-relevant misconfigurations with a focus on **low noise and useful findings**.
 
-![sorx UI](docs/ui.png)
+![sorx UI](https://raw.githubusercontent.com/Pupsix/sorx/main/docs/ui.png)
 
 > [!WARNING]
 > **sorx is currently under active development.**
