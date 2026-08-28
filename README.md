@@ -4,10 +4,12 @@
 
 `sorx` is a CLI tool for analyzing CORS configurations and detecting potentially security-relevant misconfigurations with a focus on **low noise and useful findings**.
 
-> [!NOTE]
+![sorx UI](docs/ui.png)
+
+> [!WARNING]
 > **sorx is currently under active development.**
 > 
-> The project is not ready for use yet. The main executable/CLI is not available at this time, and functionality is still being implemented.
+> This is an early test release. Features, detection rules, output formats, and CLI behavior may change in future versions.
 
 ## Features
 
@@ -108,12 +110,6 @@ Basic scan:
 
 ```
 sorx -u https://example.com
-```
-
-Enable active CORS fuzzing:
-
-```
-sorx -u https://example.com -a
 ```
 
 Select testing mode:
