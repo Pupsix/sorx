@@ -1,0 +1,113 @@
+rules:
+  ###########################################
+  ## Wildcard Origin ########################
+  ###########################################
+
+  - id: CORS-001
+    title: Wildcard origin
+    severity: info
+    description: >
+      The server allows requests from any origin using a wildcard
+      Access-Control-Allow-Origin value.
+
+
+  ###########################################
+  ## Origin Reflection ######################
+  ###########################################
+
+  - id: CORS-100
+    title: Attacker origin reflected
+    severity: info
+    description: >
+      The server reflects an attacker-controlled origin in the
+      Access-Control-Allow-Origin response header.
+
+  - id: CORS-101
+    title: Attacker origin reflected with credentials
+    severity: high
+    description: >
+      The server reflects an attacker-controlled origin and allows
+      credentials for cross-origin requests.
+
+
+  ###########################################
+  ## Null Origin ############################
+  ###########################################
+
+  - id: CORS-200
+    title: Null origin with credentials
+    severity: high
+    description: >
+      The server allows the null origin and credentials for
+      cross-origin requests.
+
+  - id: CORS-201
+    title: Null origin allowed
+    severity: medium
+    description: >
+      The server explicitly allows the null origin for
+      cross-origin requests.
+
+
+  ###########################################
+  ## Preflight / Request Permissions ########
+  ###########################################
+
+  - id: CORS-300
+    title: Sensitive request header allowed
+    severity: info
+    description: >
+      The CORS policy allows a sensitive request header such as
+      Authorization.
+
+  - id: CORS-301
+    title: Wildcard request headers
+    severity: info
+    description: >
+      The server allows arbitrary request headers through a wildcard
+      Access-Control-Allow-Headers value.
+
+  - id: CORS-302
+    title: Wildcard request methods
+    severity: info
+    description: >
+      The server allows arbitrary HTTP methods through a wildcard
+      Access-Control-Allow-Methods value.
+
+
+  ###########################################
+  ## Exposed Response Headers ##############
+  ###########################################
+
+  - id: CORS-400
+    title: Sensitive response header exposed
+    severity: medium
+    description: >
+      The server exposes a potentially sensitive response header
+      through Access-Control-Expose-Headers.
+
+
+  ###########################################
+  ## CORS Combinations ######################
+  ###########################################
+
+  - id: CORS-900
+    title: Origin reflection with credentials and Authorization
+    severity: high
+    description: >
+      The server reflects an attacker-controlled origin, allows
+      credentials, and permits the Authorization request header.
+
+  - id: CORS-901
+    title: Origin reflection with credentials and sensitive headers
+    severity: high
+    description: >
+      The server reflects an attacker-controlled origin, allows
+      credentials, and exposes or permits sensitive headers.
+
+  - id: CORS-902
+    title: Origin reflection with credentials and broad methods
+    severity: high
+    description: >
+      The server reflects an attacker-controlled origin, allows
+      credentials, and permits broad cross-origin HTTP methods.

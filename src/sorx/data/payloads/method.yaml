@@ -1,0 +1,17 @@
+method:
+  high_priority:
+    - "GET"
+    - "POST"
+    - "PUT"
+    - "DELETE"
+    - "PATCH"
+
+  medium_priority:
+    - "HEAD"
+    - "OPTIONS"
+
+  low_priority:
+    - "TRACE"
+    - "CONNECT"
+    - "ACL"
+    - "PROPFIND"

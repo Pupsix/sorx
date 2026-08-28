@@ -1,0 +1,14 @@
+header:
+  high_priority:
+    - "Authorization"
+    - "Content-Type"
+    - "X-Requested-With"
+
+  medium_priority:
+    - "X-CSRF-Token"
+    - "X-API-Key"
+    - "X-Auth-Token"
+    - "X-Requested-With"
+
+  low_priority:
+    - "X-Custom-Header"

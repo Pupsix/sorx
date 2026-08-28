@@ -6,6 +6,7 @@
 
 > [!NOTE]
 > **sorx is currently under active development.**
+> 
 > The project is not ready for use yet. The main executable/CLI is not available at this time, and functionality is still being implemented.
 
 ## Features

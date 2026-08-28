@@ -1,0 +1,6 @@
+sensitive_methods:
+  - "POST"
+  - "PUT"
+  - "PATCH"
+  - "DELETE"
+  - "*"

@@ -1,0 +1,20 @@
+origin:
+  high_priority:
+    - "null"
+    - "*"
+    - "https://attacker.com"
+    - "http://attacker.com"
+    - "https://{TRUST_HOSTNAME}.attacker.com"
+    - "https://{TRUST_HOSTNAME}-attacker.com"
+    - "https://{TRUST_HOSTNAME}@attacker.com"
+    - "https://attacker.com.{TRUST_HOSTNAME}"
+
+  medium_priority:
+    - "https://{TRUST_HOSTNAME}."
+    - "https://{TRUST_HOSTNAME_UPPERCASE}.attacker.com"
+
+  low_priority:
+    - "https://{TRUST_HOSTNAME}:443"
+    - "http://{TRUST_HOSTNAME}:80"
+    - "https://attacker.com:443"
+    - "http://attacker.com:80"
