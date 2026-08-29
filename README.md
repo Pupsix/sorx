@@ -6,7 +6,7 @@
 common CORS misconfigurations, and identifying potentially
 security-relevant CORS issues with a focus on **low noise and useful findings**.
 
-![sorx UI](https://raw.githubusercontent.com/Pupsix/sorx/main/docs/demo.gif)
+![sorx UI](https://raw.githubusercontent.com/Pupsix/sorx/main/docs/demo-2.gif)
 
 > [!WARNING]
 > **sorx is currently under active development.**
