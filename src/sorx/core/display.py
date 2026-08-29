@@ -3,6 +3,7 @@ import yaml
 from colorama import Fore, Style, init
 
 from sorx import __version__
+from sorx.data.loader.rule import get_rule
 
 init(autoreset=True)
 
@@ -105,3 +106,91 @@ def summary(stat):
     print(f"  Output          : {stat.output}")
 
     print("─" * 44)
+
+
+# Utils
+def show_id_details(rule_id):
+    rule = get_rule(rule_id)
+
+    if not rule:
+        print(f"{Fore.RED}sorx: CORS ID '{rule_id}' not found{Style.RESET_ALL}")
+        return
+
+    severity = rule["severity"].lower()
+
+    severity_color = {
+        "high": Fore.RED,
+        "medium": Fore.YELLOW,
+        "low": Fore.GREEN,
+        "info": "\033[38;5;250m",
+    }.get(severity, Fore.WHITE)
+
+    def print_block(label, content):
+        print(f"{Fore.CYAN}   {label}:{Style.RESET_ALL}")
+
+        for line in content.strip().splitlines():
+            print(f"      {line}")
+
+    print(f"\n{Fore.YELLOW}* {rule['id']}{Style.RESET_ALL}  - {Fore.WHITE}{rule['title']}{Style.RESET_ALL}")
+
+    print(f"{Fore.YELLOW}* Severity: {Style.RESET_ALL}{severity_color}{rule['severity']}{Style.RESET_ALL}")
+
+    print(f"{Fore.YELLOW}* Description:{Style.RESET_ALL}")
+    print(f"   - {rule['description'].strip()}")
+
+    print(f"{Fore.YELLOW}* Evidence:{Style.RESET_ALL}")
+    print(f"   - {rule['evidence'].strip()}")
+
+    print(f"{Fore.YELLOW}* Suggestion:{Style.RESET_ALL}")
+    print(f"   - {rule['suggestion'].strip()}")
+
+    example = rule.get("example")
+    note = rule.get("note")
+
+
+def show_verbose(results):
+    REQUEST_HEADER_BLACKLIST = {}
+    RESPONSE_HEADER_BLACKLIST = {}
+
+    for url, outputs in results.items():
+
+        for result in outputs:
+            task = result.get("task", {})
+            response = result.get("response")
+            error = result.get("error")
+
+            method = task.get("method", "GET")
+            target = task.get("url", url)
+            headers = task.get("headers", {})
+            data = task.get("data")
+
+            # Request
+            print(f"\n{Fore.YELLOW}Request:{Style.RESET_ALL}")
+            print(f"  {method} {target}")
+
+            for name, value in headers.items():
+                if name.lower() not in REQUEST_HEADER_BLACKLIST:
+                    print(f"  {name}: {value}")
+
+            if data:
+                print(f"\n  {data}")
+
+            # Error
+            if error:
+                print(f"\n{Fore.RED}Error:{Style.RESET_ALL} {error}")
+                continue
+
+            # Response
+            print(f"\n{Fore.YELLOW}Response:{Style.RESET_ALL}")
+
+            if response is None:
+                print("  No response")
+                continue
+
+            print(f"  HTTP {response.status_code}")
+
+            for name, value in response.headers.items():
+                if name.lower() not in RESPONSE_HEADER_BLACKLIST:
+                    print(f"  {name}: {value}")
+            print("")
+            print("─" * 44)

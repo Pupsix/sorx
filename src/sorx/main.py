@@ -1,13 +1,14 @@
 import argparse
 import re
 import sys
-
 import requests
 from colorama import Fore, Style, init
 
 from sorx import __version__
 from sorx.checks.cors import run as cors_run
 from sorx.core import display, reporter
+from sorx.core.display import show_id_details, show_verbose
+from sorx.core.requester import run
 
 init(autoreset=True)
 
@@ -31,13 +32,16 @@ def build_flags():
             width=120,
         ),
         epilog="""Examples:
-    sorx -u https://example.com                  # Simple scan
-    sorx -u https://example.com -m deep          # Enable active mode
     sorx -u https://example.com -o result.txt    # Output in TXT
     sorx -u https://example.com -j result.json   # Output in JSON
     sorx -l targets.txt -m quick -t 20           # Scan a list of targets
-    """,
-    )
+
+[?] How to get better results with sorx?
+- Use list scans for quick reconnaissance. When a target has findings worth investigating, rerun sorx with `--verbose` on that target to view the full evidence.
+- If you're scanning a single target, I recommend using `--verbose`.
+- Due to UI limitations, displaying full details for every target would generate an excessive amount of output. For example, scanning 100 targets could produce 500–1,000 lines of output.
+
+""")
 
     parser.add_argument("-v", "--version", action="store_true", help="Show version and check for updates")
     parser.add_argument("-u", "--url", dest="url", type=str, help="Target URL")
@@ -48,6 +52,8 @@ def build_flags():
     parser.add_argument("--timeout", dest="timeout", type=int, default=6, help="Request timeout in seconds (default: 6)")
     parser.add_argument("-t", "--thread", dest="thread", type=int, default=15, help="Number of threads (default: 15)")
     parser.add_argument("-m", "--mode", dest="mode", choices=["quick", "normal", "deep"], metavar="MODE", default=None, help="Enable active CORS fuzzing: [quick, normal, deep]. Omit for passive mode.")
+    parser.add_argument("--rule", dest="rule", nargs="+", type=str, help="Show CORS finding details")
+    parser.add_argument("--verbose", dest="verbose", action="store_true", help="Show full evidence")
     parser.add_argument("-o", "--output", dest="output", type=str, help="Output file path")
     parser.add_argument("-j", "--json", dest="json", type=str, help="Output results in JSON format")
 
@@ -157,6 +163,12 @@ def main():
             show_version()
             return
 
+        # Show details
+        if args.rule:
+            for rule_id in args.rule:
+                show_id_details(rule_id)
+            return
+
         # Targets
         targets = get_targets(args, parser)
 
@@ -185,6 +197,10 @@ def main():
         # Scan
         stat = cors_run(urls=targets, config=config, on_target_done=display.findings)
 
+        # Verbose
+        if args.verbose:
+            show_verbose(stat.results)
+
         # Summary
         display.summary(stat)
 
@@ -205,7 +221,10 @@ def main():
                 parser.error(f"unable to write output: {err}")
 
     except KeyboardInterrupt:
-        print(f"\n{Fore.YELLOW}Scan interrupted by user.{Style.RESET_ALL}")
+        print(
+            f"\n{Fore.YELLOW}Scan interrupted by user..."
+            f"{Style.RESET_ALL}"
+        )
         raise SystemExit(130)
 
 

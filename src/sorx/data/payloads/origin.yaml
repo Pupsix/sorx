@@ -8,6 +8,7 @@ origin:
     - "https://{TRUST_HOSTNAME}-attacker.com"
     - "https://{TRUST_HOSTNAME}@attacker.com"
     - "https://attacker.com.{TRUST_HOSTNAME}"
+    - "https://attacker-{TRUST_HOSTNAME}"
 
   medium_priority:
     - "https://{TRUST_HOSTNAME}."

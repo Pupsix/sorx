@@ -19,3 +19,16 @@
 * Limited functionality.
 * Some features and detection rules may not work as expected.
 * CLI and output behavior may change in future releases
+
+## [0.1.1] - 2026-08-28
+
+### Fixed
+
+* Fixed incorrect usage instructions in the README.
+
+## [0.1.2] - 2026-08-29
+
+### Added
+
+* Added trusted-domain payload generation.
+* Added `--rule` and `--verbose` flags.

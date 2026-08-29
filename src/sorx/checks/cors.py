@@ -1,4 +1,5 @@
 import time
+from urllib.parse import urlparse
 
 from sorx.checks.cors_analyze import analyze
 from sorx.core.display import header
@@ -16,11 +17,19 @@ class Stat:
         self.errors = {url: [] for url in targets}
         self.start_time = time.time()
         self.error = self.request = 0
+        self.results = {}
         self.elapsed = "00:00"
         self.output = config.get("output") or "None"
 
 
-def create_job(url, method="GET", headers=None, data=None, timeout=10, origin=None):
+def create_job(
+    url,
+    method="GET",
+    headers=None,
+    data=None,
+    timeout=10,
+    origin=None
+):
     return {
         "url": url,
         "method": method,
@@ -33,14 +42,18 @@ def create_job(url, method="GET", headers=None, data=None, timeout=10, origin=No
 
 def get_payloads(name, mode):
     payloads = load_payload(name).get(name, {})
+
     priority_map = {
         "quick": ["high_priority"],
         "normal": ["high_priority", "medium_priority"],
         "deep": ["high_priority", "medium_priority", "low_priority"],
     }
+
     result = []
+
     for priority in priority_map.get(mode, []):
         result.extend(payloads.get(priority, []))
+
     return result
 
 
@@ -56,15 +69,31 @@ def passive(url, config):
     ]
 
 
-def active(url, config):
-    mode, timeout, base_headers = config.get("mode"), config.get("timeout", 10), config.get("headers", {})
+def active(url, config, trust_hostname):
+    mode = config.get("mode")
+    timeout = config.get("timeout", 10)
+    base_headers = config.get("headers", {})
+
     jobs = []
 
-    # Origin fuzzing
     for origin in get_payloads("origin", mode):
-        jobs.append(create_job(url=url, method="GET", headers={**base_headers, "Origin": origin}, timeout=timeout, origin=origin))
+        origin = origin.replace("{TRUST_HOSTNAME}", trust_hostname)
 
-    # Preflight
+        origin = origin.replace("{TRUST_HOSTNAME_UPPERCASE}", trust_hostname.upper())
+
+        jobs.append(
+            create_job(
+                url=url,
+                method="GET",
+                headers={
+                    **base_headers,
+                    "Origin": origin
+                },
+                timeout=timeout,
+                origin=origin
+            )
+        )
+
     jobs.append(
         create_job(
             url=url,
@@ -91,25 +120,34 @@ def update_elapsed(stat):
 def analyze_results(stat, results):
     for result in results:
         task = result.get("task")
+
         if not task:
             continue
 
         target_url = task.get("url")
+
         if target_url not in stat.findings:
             continue
 
         error = result.get("error")
+
         if error is not None:
             stat.error += 1
+
             if error not in stat.errors[target_url]:
                 stat.errors[target_url].append(error)
+
             continue
 
         response = result.get("response")
+
         if response is None:
             continue
 
-        for finding in analyze(response=response, task=task):
+        for finding in analyze(
+            response=response,
+            task=task
+        ):
             if finding not in stat.findings[target_url]:
                 stat.findings[target_url].append(finding)
 
@@ -120,28 +158,40 @@ def run(urls, config, on_target_done=None):
     workers = config.get("workers", 10)
 
     urls = [urls] if isinstance(urls, str) else list(urls)
+
     stat = Stat(targets=urls, mode=mode_name, threads=workers, config=config)
 
     header(stat)
 
     for url in urls:
-        # Build jobs
-        jobs = passive(url=url, config=config) if mode is None else active(url=url, config=config)
 
-        # Count requests
+        # Get hostname directly from target URL
+        trust_hostname = urlparse(url).hostname or ""
+
+        # Generate jobs
+        if mode is None:
+            jobs = passive(url=url, config=config)
+        else:
+            jobs = active(url=url, config=config,trust_hostname=trust_hostname)
+
         stat.request += len(jobs)
 
-        # Send requests & Analyze responses
+        # Send requests
         results = requester_run(jobs=jobs, workers=workers)
+
+        # Store raw requester output
+        stat.results[url] = results
+
+        # Analyze
         analyze_results(stat=stat, results=results)
 
         # Target finished
         stat.scanned += 1
         update_elapsed(stat)
 
-        # Tell caller that this target is finished
         if on_target_done:
             on_target_done(url, stat.findings[url], stat.errors[url])
 
     update_elapsed(stat)
+
     return stat

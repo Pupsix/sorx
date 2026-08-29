@@ -9,6 +9,13 @@ rules:
     description: >
       The server allows requests from any origin using a wildcard
       Access-Control-Allow-Origin value.
+    evidence: >
+      Access-Control-Allow-Origin is set to '*'.
+    suggestion: >
+      Replace the wildcard with an explicit list of trusted origins.
+    example:
+      response: |
+        Access-Control-Allow-Origin: *
 
 
   ###########################################
@@ -21,6 +28,21 @@ rules:
     description: >
       The server reflects an attacker-controlled origin in the
       Access-Control-Allow-Origin response header.
+    evidence: >
+      The supplied Origin value is reflected in
+      Access-Control-Allow-Origin.
+    suggestion: >
+      Validate the Origin against an explicit allowlist of trusted
+      origins instead of reflecting arbitrary origins.
+    note: >
+      If the target validates the origin against a trusted domain,
+      replace the example origin with a domain trusted by the target.
+    example:
+      request: |
+        Origin: https://attacker.example
+      response: |
+        Access-Control-Allow-Origin: https://attacker.example
+
 
   - id: CORS-101
     title: Attacker origin reflected with credentials
@@ -28,7 +50,22 @@ rules:
     description: >
       The server reflects an attacker-controlled origin and allows
       credentials for cross-origin requests.
-
+    evidence: >
+      The supplied Origin value is reflected in
+      Access-Control-Allow-Origin and
+      Access-Control-Allow-Credentials is set to true.
+    suggestion: >
+      Restrict Access-Control-Allow-Origin to trusted origins and
+      avoid allowing credentials for untrusted origins.
+    note: >
+      If the target validates the origin against a trusted domain,
+      replace the example origin with a domain trusted by the target.
+    example:
+      request: |
+        Origin: https://attacker.example
+      response: |
+        Access-Control-Allow-Origin: https://attacker.example
+        Access-Control-Allow-Credentials: true
 
   ###########################################
   ## Null Origin ############################
@@ -40,6 +77,18 @@ rules:
     description: >
       The server allows the null origin and credentials for
       cross-origin requests.
+    evidence: >
+      Access-Control-Allow-Origin is set to 'null' and
+      Access-Control-Allow-Credentials is set to true.
+    suggestion: >
+      Do not allow the null origin with credentials. Restrict CORS
+      to trusted origins.
+    example:
+      request: |
+        Origin: null
+      response: |
+        Access-Control-Allow-Origin: null
+        Access-Control-Allow-Credentials: true
 
   - id: CORS-201
     title: Null origin allowed
@@ -47,6 +96,16 @@ rules:
     description: >
       The server explicitly allows the null origin for
       cross-origin requests.
+    evidence: >
+      Access-Control-Allow-Origin is set to 'null'.
+    suggestion: >
+      Remove the null origin from the CORS allowlist unless it is
+      explicitly required.
+    example:
+      request: |
+        Origin: null
+      response: |
+        Access-Control-Allow-Origin: null
 
 
   ###########################################
@@ -59,6 +118,20 @@ rules:
     description: >
       The CORS policy allows a sensitive request header such as
       Authorization.
+    evidence: >
+      A sensitive request header such as Authorization is included
+      in Access-Control-Allow-Headers.
+    suggestion: >
+      Allow only the request headers required by the application and
+      avoid permitting sensitive headers unnecessarily.
+    example:
+      request: |
+        Origin: https://attacker.example
+        Access-Control-Request-Method: GET
+        Access-Control-Request-Headers: Authorization
+      response: |
+        Access-Control-Allow-Origin: https://attacker.example
+        Access-Control-Allow-Headers: Authorization
 
   - id: CORS-301
     title: Wildcard request headers
@@ -66,6 +139,17 @@ rules:
     description: >
       The server allows arbitrary request headers through a wildcard
       Access-Control-Allow-Headers value.
+    evidence: >
+      Access-Control-Allow-Headers is set to '*'.
+    suggestion: >
+      Replace the wildcard with an explicit list of required
+      request headers.
+    example:
+      request: |
+        Origin: https://attacker.example
+        Access-Control-Request-Headers: X-Custom-Header
+      response: |
+        Access-Control-Allow-Headers: *
 
   - id: CORS-302
     title: Wildcard request methods
@@ -73,6 +157,17 @@ rules:
     description: >
       The server allows arbitrary HTTP methods through a wildcard
       Access-Control-Allow-Methods value.
+    evidence: >
+      Access-Control-Allow-Methods is set to '*'.
+    suggestion: >
+      Replace the wildcard with an explicit list of required
+      HTTP methods.
+    example:
+      request: |
+        Origin: https://attacker.example
+        Access-Control-Request-Method: DELETE
+      response: |
+        Access-Control-Allow-Methods: *
 
 
   ###########################################
@@ -85,6 +180,15 @@ rules:
     description: >
       The server exposes a potentially sensitive response header
       through Access-Control-Expose-Headers.
+    evidence: >
+      A potentially sensitive response header is included in
+      Access-Control-Expose-Headers.
+    suggestion: >
+      Expose only the response headers that the client actually
+      requires and avoid exposing sensitive information.
+    example:
+      response: |
+        Access-Control-Expose-Headers: X-Auth-Token
 
 
   ###########################################
@@ -97,6 +201,24 @@ rules:
     description: >
       The server reflects an attacker-controlled origin, allows
       credentials, and permits the Authorization request header.
+    evidence: >
+      The supplied Origin is reflected, credentials are allowed,
+      and Authorization is permitted by Access-Control-Allow-Headers.
+    suggestion: >
+      Restrict allowed origins to trusted domains and avoid allowing
+      credentials with untrusted origins or sensitive request headers.
+    note: >
+      If the target validates the origin against a trusted domain,
+      replace the example origin with a domain trusted by the target.
+    example:
+      request: |
+        Origin: https://attacker.example
+        Access-Control-Request-Headers: Authorization
+      response: |
+        Access-Control-Allow-Origin: https://attacker.example
+        Access-Control-Allow-Credentials: true
+        Access-Control-Allow-Headers: Authorization
+
 
   - id: CORS-901
     title: Origin reflection with credentials and sensitive headers
@@ -104,6 +226,23 @@ rules:
     description: >
       The server reflects an attacker-controlled origin, allows
       credentials, and exposes or permits sensitive headers.
+    evidence: >
+      The supplied Origin is reflected, credentials are allowed,
+      and one or more sensitive headers are exposed or permitted.
+    suggestion: >
+      Restrict allowed origins and credentials, and avoid exposing
+      or permitting sensitive headers unless strictly required.
+    note: >
+      If the target validates the origin against a trusted domain,
+      replace the example origin with a domain trusted by the target.
+    example:
+      request: |
+        Origin: https://attacker.example
+      response: |
+        Access-Control-Allow-Origin: https://attacker.example
+        Access-Control-Allow-Credentials: true
+        Access-Control-Expose-Headers: X-Auth-Token
+
 
   - id: CORS-902
     title: Origin reflection with credentials and broad methods
@@ -111,3 +250,20 @@ rules:
     description: >
       The server reflects an attacker-controlled origin, allows
       credentials, and permits broad cross-origin HTTP methods.
+    evidence: >
+      The supplied Origin is reflected, credentials are allowed,
+      and broad or wildcard HTTP methods are permitted.
+    suggestion: >
+      Restrict allowed origins and credentials, and allow only the
+      HTTP methods required by the application.
+    note: >
+      If the target validates the origin against a trusted domain,
+      replace the example origin with a domain trusted by the target.
+    example:
+      request: |
+        Origin: https://attacker.example
+        Access-Control-Request-Method: DELETE
+      response: |
+        Access-Control-Allow-Origin: https://attacker.example
+        Access-Control-Allow-Credentials: true
+        Access-Control-Allow-Methods: *

@@ -2,7 +2,9 @@
 
 > A lightweight CORS security analyzer for bug bounty hunters.
 
-`sorx` is a CLI tool for analyzing CORS configurations and detecting potentially security-relevant misconfigurations with a focus on **low noise and useful findings**.
+`sorx` is a CLI tool for analyzing CORS configurations, testing
+common CORS misconfigurations, and identifying potentially
+security-relevant CORS issues with a focus on **low noise and useful findings**.
 
 ![sorx UI](https://raw.githubusercontent.com/Pupsix/sorx/main/docs/ui.png)
 
@@ -28,10 +30,11 @@
 - **CLI-first** — Designed to fit naturally into recon and bug bounty pipelines.
 - **Free & open source** — Free to use, inspect, modify, and contribute to.
 - **Actively developed** — Continuously improved with new checks, payloads, and features.
-- **Low noise** — Focuses on security-relevant CORS behavior instead of reporting every configuration.
+- **Low noise** — Reports security-relevant CORS behavior without treating every permissive configuration as a vulnerability.
 - **Automation-friendly** — Supports JSON output and configurable threads, rate limits, and timeouts.
 - **Lightweight** — Simple setup with minimal dependencies.
 - **Built for hunters and testers** — Designed around practical CORS testing workflows rather than generic HTTP scanning.
+- **Exploitability-focused** — Prioritizes CORS configurations with realistic security impact over parser quirks or bypasses that do not translate into a meaningful attack.
 
 ## Installation
 
