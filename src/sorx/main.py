@@ -25,7 +25,7 @@ def build_flags():
     parser = SorxParser(
         prog="sorx",
         description="A tool for analyzing CORS headers",
-        add_help=True,
+        add_help=False,
         formatter_class=lambda prog: argparse.RawDescriptionHelpFormatter(
             prog,
             max_help_position=30,
@@ -36,26 +36,38 @@ def build_flags():
     sorx -u https://example.com -j result.json   # Output in JSON
     sorx -l targets.txt -m quick -t 20           # Scan a list of targets
 
-[?] How to get better results with sorx?
-- Use list scans for quick reconnaissance. When a target has findings worth investigating, rerun sorx with `--verbose` on that target to view the full evidence.
-- If you're scanning a single target, I recommend using `--verbose`.
-- Due to UI limitations, displaying full details for every target would generate an excessive amount of output. For example, scanning 100 targets could produce 500–1,000 lines of output.
-
 """)
 
-    parser.add_argument("-v", "--version", action="store_true", help="Show version and check for updates")
-    parser.add_argument("-u", "--url", dest="url", type=str, help="Target URL")
-    parser.add_argument("-l", "--list", dest="list", type=str, help="File containing target URLs")
-    parser.add_argument("-H", "--header", dest="header", type=str, help="Custom header <e.g., 'Hackerone: abcxyz'>")
-    parser.add_argument("-X", "--method", dest="method", type=str, default="GET", help="HTTP method (default: GET)")
-    parser.add_argument("-D", "--data", dest="data", type=str, help="Request body data")
-    parser.add_argument("--timeout", dest="timeout", type=int, default=6, help="Request timeout in seconds (default: 6)")
-    parser.add_argument("-t", "--thread", dest="thread", type=int, default=15, help="Number of threads (default: 15)")
-    parser.add_argument("-m", "--mode", dest="mode", choices=["quick", "normal", "deep"], metavar="MODE", default=None, help="Enable active CORS fuzzing: [quick, normal, deep]. Omit for passive mode.")
-    parser.add_argument("--rule", dest="rule", nargs="+", type=str, help="Show CORS finding details")
-    parser.add_argument("--verbose", dest="verbose", action="store_true", help="Show full evidence")
-    parser.add_argument("-o", "--output", dest="output", type=str, help="Output file path")
-    parser.add_argument("-j", "--json", dest="json", type=str, help="Output results in JSON format")
+    # INPUT
+    input_group = parser.add_argument_group("INPUT")
+    input_group.add_argument("-u", "--url", dest="url", type=str, help="Target URL")
+    input_group.add_argument("-l", "--list", dest="list", type=str, help="File containing target URLs")
+    input_group.add_argument("-H", "--header", dest="header", type=str, help="Custom header <e.g., 'Hackerone: abcxyz'>")
+    input_group.add_argument("-X", "--method", dest="method", type=str, default="GET", help="HTTP method (default: GET)")
+    input_group.add_argument("-D", "--data", dest="data", type=str, help="Request body data")
+
+    # PERFORMANCE
+    performance = parser.add_argument_group("PERFORMANCE")
+    performance.add_argument("--timeout", dest="timeout", type=int, default=6, help="Request timeout in seconds (default: 6)")
+    performance.add_argument("-t", "--thread", dest="thread", type=int, default=15, help="Number of threads (default: 15)")
+    performance.add_argument("--rate", dest="rate", type=int, help="Set request rate limit (requests/second)")
+    performance.add_argument("--delay", dest="delay", type=float, help="Set delay between requests (seconds)")
+
+    # OPTIONS
+    options = parser.add_argument_group("OPTIONS")
+    options.add_argument("-m", "--mode", dest="mode", choices=["quick", "normal", "deep"], metavar="MODE", default=None, help="Enable active CORS fuzzing: [quick, normal, deep]. Omit for passive mode.")
+    options.add_argument("--rule", dest="rule", nargs="+", type=str, help="Show CORS finding details")
+    options.add_argument("--verbose", dest="verbose", action="store_true", help="Show full evidence")
+
+    # OUTPUT
+    output = parser.add_argument_group("OUTPUT")
+    output.add_argument("-o", "--output", dest="output", type=str, help="Output file path")
+    output.add_argument("-j", "--json", dest="json", type=str, help="Output results in JSON format")
+
+    # UTILS
+    utils = parser.add_argument_group("UTILS")
+    utils.add_argument("-v", "--version", action="store_true", help="Show version and check for updates")
+    utils.add_argument("-h", "--help", action="store_true", help="Show this help message and exit")
 
     return parser
 
@@ -158,6 +170,25 @@ def main():
 
         args = parser.parse_args()
 
+        # Validate numeric options
+        if args.timeout <= 0:
+            parser.error("--timeout must be greater than 0")
+
+        if args.thread <= 0:
+            parser.error("--thread must be greater than 0")
+
+        if args.rate is not None and args.rate <= 0:
+            parser.error("--rate must be greater than 0")
+
+        if args.delay is not None and args.delay < 0:
+            parser.error("--delay cannot be negative")
+
+        if args.help:
+            print(display.logo())
+            print()
+            parser.print_help()
+            return
+
         # Version
         if args.version:
             show_version()
@@ -195,11 +226,16 @@ def main():
         print(display.logo())
 
         # Scan
-        stat = cors_run(urls=targets, config=config, on_target_done=display.findings)
+        stat = cors_run(
+            urls=targets,
+            config=config,
+            on_target_done=display.findings
+        )
 
         # Verbose
         if args.verbose:
-            show_verbose(stat.results)
+            display.show_verbose(stat.results)
+            return
 
         # Summary
         display.summary(stat)

@@ -4,6 +4,7 @@ from colorama import Fore, Style, init
 
 from sorx import __version__
 from sorx.data.loader.rule import get_rule
+from sorx.checks.cors_analyze import analyze
 
 init(autoreset=True)
 
@@ -20,25 +21,25 @@ GREY = "\033[38;5;250m"
 
 def logo():
     return fr"""
-        ______  _____  _____  __  __
-        \  ___| \    \ \  ,_\ \ \/ /
-         \___  \ \  \ \ \ \    :  :
-          \_____) \____) \_)  /_/\_\ v{__version__}
+    {Fore.LIGHTRED_EX}     _____   ____   ____   _  __ {Style.RESET_ALL}
+    {Fore.LIGHTRED_EX}    (  ___| (    \ (  ,_\ ( \/ / {Style.RESET_ALL}
+    {Fore.LIGHTRED_EX}     \___  \ \  \ \ \ \    :  : {Style.RESET_ALL}
+    {Fore.LIGHTRED_EX}      |_____) \____) \_)  /_/\_) {Style.RESET_ALL} {Fore.LIGHTYELLOW_EX}v{__version__}{Style.RESET_ALL}
     
-        https://github.com/Pupsix/sorx
+        {Fore.LIGHTYELLOW_EX}https://github.com/Pupsix/sorx{Style.RESET_ALL}
     """
 
 
 def load_rules():
     current_dir = os.path.dirname(__file__)
-    rules_path = os.path.join(
-        current_dir,
-        "..",
-        "checks",
-        "cors_rules.yaml",
+    rules_path = os.path.abspath(
+        os.path.join(
+            current_dir,
+            "..",
+            "checks",
+            "cors_rules.yaml",
+        )
     )
-
-    rules_path = os.path.abspath(rules_path)
 
     try:
         with open(rules_path, "r", encoding="utf-8") as file:
@@ -51,35 +52,37 @@ def load_rules():
 
 
 def get_severity(finding_id):
-    rules = load_rules()
+    rule = get_rule(finding_id)
 
-    for rule in rules:
-        if rule.get("id") == finding_id:
-            return rule.get("severity", "info").lower()
+    if rule:
+        return rule.get("severity", "info").lower()
 
     return "info"
 
 
 def header(stat):
-    print(f"  Targets: {stat.targets} | Mode: {stat.mode} | Threads: {stat.threads}")
+    print(
+        f"Targets: {stat.targets} | "
+        f"Mode: {stat.mode} | "
+        f"Threads: {stat.threads}"
+    )
 
 
 def findings(url, target_findings, errors):
     print()
-    print(f"  {Fore.YELLOW}{url}{Style.RESET_ALL}")
+    print(f"{Fore.YELLOW}{url}{Style.RESET_ALL}")
 
     if errors:
         if "timeout" in errors:
-            print(f"    {GREY}[Timeout]{Style.RESET_ALL}")
+            print(f"  {GREY}[Timeout]{Style.RESET_ALL}")
         elif "connection" in errors:
-            print(f"    {GREY}[Connection error]{Style.RESET_ALL}")
+            print(f"  {GREY}[Connection error]{Style.RESET_ALL}")
         else:
-            print(f"    {GREY}[Request error]{Style.RESET_ALL}")
-
+            print(f"  {GREY}[Request error]{Style.RESET_ALL}")
         return
 
     if not target_findings:
-        print(f"    {GREY}[No findings]{Style.RESET_ALL}")
+        print(f"  {GREY}[No findings]{Style.RESET_ALL}")
         return
 
     for finding in target_findings:
@@ -89,21 +92,23 @@ def findings(url, target_findings, errors):
         severity = get_severity(finding_id)
         color = SEVERITY_COLORS.get(severity, GREY)
 
-        print(f"    {color}[{finding_id}]{Style.RESET_ALL} {name}")
+        print(
+            f"  {color}[{finding_id}]{Style.RESET_ALL} {name}"
+        )
 
 
 def summary(stat):
     print()
     print("─" * 44)
 
-    print("  Scan completed")
+    print("Scan completed")
     print()
 
-    print(f"  Targets scanned : {stat.scanned}")
-    print(f"  Errors          : {stat.error}")
-    print(f"  Requests        : {stat.request}")
-    print(f"  Time            : {stat.elapsed}")
-    print(f"  Output          : {stat.output}")
+    print(f"Targets scanned : {stat.scanned}")
+    print(f"Errors          : {stat.error}")
+    print(f"Requests        : {stat.request}")
+    print(f"Time            : {stat.elapsed}")
+    print(f"Output          : {stat.output}")
 
     print("─" * 44)
 
@@ -116,20 +121,8 @@ def show_id_details(rule_id):
         print(f"{Fore.RED}sorx: CORS ID '{rule_id}' not found{Style.RESET_ALL}")
         return
 
-    severity = rule["severity"].lower()
-
-    severity_color = {
-        "high": Fore.RED,
-        "medium": Fore.YELLOW,
-        "low": Fore.GREEN,
-        "info": "\033[38;5;250m",
-    }.get(severity, Fore.WHITE)
-
-    def print_block(label, content):
-        print(f"{Fore.CYAN}   {label}:{Style.RESET_ALL}")
-
-        for line in content.strip().splitlines():
-            print(f"      {line}")
+    severity = rule.get("severity", "info").lower()
+    severity_color = SEVERITY_COLORS.get(severity, GREY)
 
     print(f"\n{Fore.YELLOW}* {rule['id']}{Style.RESET_ALL}  - {Fore.WHITE}{rule['title']}{Style.RESET_ALL}")
 
@@ -144,13 +137,69 @@ def show_id_details(rule_id):
     print(f"{Fore.YELLOW}* Suggestion:{Style.RESET_ALL}")
     print(f"   - {rule['suggestion'].strip()}")
 
-    example = rule.get("example")
     note = rule.get("note")
+
+    if note:
+        print(f"{Fore.YELLOW}* Note:{Style.RESET_ALL}")
+
+        for line in note.strip().splitlines():
+            print(f"   - {line}")
+
+    example = rule.get("example")
+
+    if example:
+        print(f"{Fore.YELLOW}* Example:{Style.RESET_ALL}")
+
+        if example.get("request"):
+            print(f"   {Fore.CYAN}Request:{Style.RESET_ALL}")
+
+            for line in example["request"].strip().splitlines():
+                print(f"      {line}")
+
+        if example.get("response"):
+            print(f"   {Fore.CYAN}Response:{Style.RESET_ALL}")
+
+            for line in example["response"].strip().splitlines():
+                print(f"      {line}")
 
 
 def show_verbose(results):
-    REQUEST_HEADER_BLACKLIST = {}
-    RESPONSE_HEADER_BLACKLIST = {}
+    REQUEST_HEADER_BLACKLIST = {
+        "accept",
+        "accept-encoding",
+        "accept-language",
+        "connection",
+        "priority",
+        "sec-ch-ua",
+        "sec-ch-ua-mobile",
+        "sec-ch-ua-platform",
+        "sec-fetch-dest",
+        "sec-fetch-mode",
+        "sec-fetch-site",
+        "sec-fetch-user",
+        "upgrade-insecure-requests",
+    }
+
+    RESPONSE_HEADER_BLACKLIST = {
+        "x-xss-protection",
+        "x-frame-options",
+        "date",
+        "content-security-policy",
+        "via",
+        "content-type",
+        "cf-cache-status",
+        "etag",
+        "cache-control",
+        "expires",
+        "age",
+        "server",
+        "transfer-encoding",
+        "fly-request-id",
+        "last-modified",
+        "cf-ray",
+        "connection",
+        "content-encoding",
+    }
 
     for url, outputs in results.items():
 
@@ -163,6 +212,12 @@ def show_verbose(results):
             target = task.get("url", url)
             headers = task.get("headers", {})
             data = task.get("data")
+
+            # Analyze
+            findings = []
+
+            if response is not None and error is None:
+                findings = analyze(response=response, task=task,)
 
             # Request
             print(f"\n{Fore.YELLOW}Request:{Style.RESET_ALL}")
@@ -178,6 +233,7 @@ def show_verbose(results):
             # Error
             if error:
                 print(f"\n{Fore.RED}Error:{Style.RESET_ALL} {error}")
+                print("\n" + "─" * 44)
                 continue
 
             # Response
@@ -185,6 +241,7 @@ def show_verbose(results):
 
             if response is None:
                 print("  No response")
+                print("\n" + "─" * 44)
                 continue
 
             print(f"  HTTP {response.status_code}")
@@ -192,5 +249,14 @@ def show_verbose(results):
             for name, value in response.headers.items():
                 if name.lower() not in RESPONSE_HEADER_BLACKLIST:
                     print(f"  {name}: {value}")
-            print("")
-            print("─" * 44)
+
+            # CORS IDs
+            if findings:
+                print(f"\n{Fore.YELLOW}CORS:{Style.RESET_ALL}")
+
+                for finding_id, title in findings:
+                    severity = get_severity(finding_id)
+                    color = SEVERITY_COLORS.get(severity, GREY,)
+
+                    print(f"  [{color}{finding_id}{Style.RESET_ALL}] {title}")
+            print("\n" + "─" * 44)
