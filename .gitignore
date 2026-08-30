@@ -23,6 +23,7 @@ htmlcov/
 .tox/
 .nox/
 test/
+local-server/
 
 # Type checking
 .mypy_cache/
