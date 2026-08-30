@@ -1,21 +1,38 @@
 origin:
   high_priority:
-    - "null"
-    - "*"
     - "https://attacker.com"
     - "http://attacker.com"
+    - "null"
+    - "https://{TRUST_DOMAIN}.attacker.com"
+    - "https://attacker.com.{TRUST_DOMAIN}"
+    - "https://attacker-{TRUST_DOMAIN}"
+    - "https://attacker.{TRUST_DOMAIN}"
+    - "https://{TRUST_DOMAIN_NAME}@attacker.com"
+    - "https://attacker-{TRUST_DOMAIN_NAME}.com"
+    - "https://{TRUST_SUBDOMAIN}.attacker.com"
+    - "https://attacker.{TRUST_SUBDOMAIN}"
     - "https://{TRUST_HOSTNAME}.attacker.com"
     - "https://{TRUST_HOSTNAME}-attacker.com"
-    - "https://{TRUST_HOSTNAME}@attacker.com"
-    - "https://attacker.com.{TRUST_HOSTNAME}"
-    - "https://attacker-{TRUST_HOSTNAME}"
+    - "https://attacker{TRUST_DOMAIN}"
 
   medium_priority:
-    - "https://{TRUST_HOSTNAME}."
+    - "https://{TRUST_DOMAIN}."
+    - "https://{TRUST_DOMAIN}:443"
+    - "http://{TRUST_DOMAIN}:80"
+    - "https://{TRUST_DOMAIN_NAME}.attacker.com"
+    - "https://{TRUST_DOMAIN_NAME}-attacker.com"
+    - "https://attacker{TRUST_DOMAIN_NAME}"
+    - "https://{TRUST_SUBDOMAIN}.attacker.com"
+    - "https://attacker-{TRUST_SUBDOMAIN}"
     - "https://{TRUST_HOSTNAME_UPPERCASE}.attacker.com"
-
-  low_priority:
+    - "https://{TRUST_HOSTNAME}."
     - "https://{TRUST_HOSTNAME}:443"
     - "http://{TRUST_HOSTNAME}:80"
+
+  low_priority:
     - "https://attacker.com:443"
     - "http://attacker.com:80"
+    - "http://localhost"
+    - "http://localhost:3000"
+    - "http://127.0.0.1"
+    - "http://127.0.0.1:3000"

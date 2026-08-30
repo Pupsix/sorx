@@ -67,6 +67,8 @@ rules:
         Access-Control-Allow-Origin: https://attacker.example
         Access-Control-Allow-Credentials: true
 
+
+
   ###########################################
   ## Null Origin ############################
   ###########################################
@@ -189,6 +191,64 @@ rules:
     example:
       response: |
         Access-Control-Expose-Headers: X-Auth-Token
+
+
+  ###########################################
+  ## Origin Validation Bypass ###############
+  ###########################################
+
+  - id: CORS-500
+    title: Trusted origin validation bypass
+    severity: high
+    description: >
+      The server validates the Origin against a trusted domain using
+      an insecure suffix or partial-domain comparison. An attacker
+      can register a domain whose hostname ends with the trusted
+      domain and have the server treat it as trusted.
+    evidence: >
+      The supplied attacker-controlled Origin is reflected in
+      Access-Control-Allow-Origin and
+      Access-Control-Allow-Credentials is set to true, even though
+      the origin is not an actual subdomain of the trusted domain.
+    suggestion: >
+      Parse the origin and compare the hostname against the trusted
+      domain using an exact match or a strict subdomain check.
+      Avoid using simple string suffix or substring comparisons.
+    note: >
+      A hostname such as attackerexample.com may satisfy a naive
+      check such as hostname.endswith("example.com"), while it is
+      not a subdomain of example.com.
+    example:
+      request: |
+        Origin: https://attackerexample.com
+      response: |
+        Access-Control-Allow-Origin: https://attackerexample.com
+        Access-Control-Allow-Credentials: true
+
+
+  - id: CORS-501
+    title: Trusted subdomain validation bypass
+    severity: high
+    description: >
+      The server attempts to restrict CORS to a trusted domain or
+      its subdomains, but performs the validation using an unsafe
+      hostname suffix comparison.
+    evidence: >
+      An attacker-controlled hostname containing the trusted domain
+      as a suffix is accepted and reflected as the allowed origin.
+    suggestion: >
+      Require the hostname to equal the trusted domain or end with
+      "." followed by the trusted domain. Do not treat arbitrary
+      suffix matches as trusted subdomains.
+    note: >
+      For example, attacker.example.com may be a legitimate
+      subdomain, while attackerexample.com is a different domain.
+    example:
+      request: |
+        Origin: https://attackerexample.com
+      response: |
+        Access-Control-Allow-Origin: https://attackerexample.com
+        Access-Control-Allow-Credentials: true
 
 
   ###########################################

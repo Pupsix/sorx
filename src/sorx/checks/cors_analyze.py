@@ -31,6 +31,8 @@ def analyze(response, task):
     null_origin = allow_origin == "null"
     credentials = allow_credentials == "true"
 
+    validation_bypass = (origin_reflection and task.get("origin_type") == "validation_bypass")
+
     # Rule checks
     if wildcard_origin:
         findings.append(("CORS-001", "Wildcard origin"))
@@ -47,6 +49,19 @@ def analyze(response, task):
             ("CORS-200", "Null origin with credentials")
             if credentials
             else ("CORS-201", "Null origin allowed")
+        )
+
+    if validation_bypass:
+        findings.append(
+            (
+                "CORS-501",
+                "Origin validation bypass with credentials",
+            )
+            if credentials
+            else (
+                "CORS-500",
+                "Origin validation bypass",
+            )
         )
 
     # Header & Method checks

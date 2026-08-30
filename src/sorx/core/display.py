@@ -61,10 +61,22 @@ def get_severity(finding_id):
 
 
 def header(stat):
+    mode = stat.mode
+
+    if mode in {"quick", "normal", "deep"}:
+        mode_display = f"{mode} (Active)"
+    else:
+        mode_display = "passive"
+
+    delay = f"{stat.delay}s" if stat.delay else "Unset"
+    rate = f"{stat.rate}/s" if stat.rate else "Unset"
+
     print(
         f"Targets: {stat.targets} | "
-        f"Mode: {stat.mode} | "
-        f"Threads: {stat.threads}"
+        f"Mode: {mode_display} | "
+        f"Threads: {stat.threads} | "
+        f"Delay: {delay} | "
+        f"Rate limit: {rate}"
     )
 
 

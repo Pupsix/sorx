@@ -32,3 +32,16 @@
 
 * Added trusted-domain payload generation.
 * Added `--rule` and `--verbose` flags.
+
+## [0.2.0] - 2026-08-30
+
+### Added
+
+- Added request rate limiting with `--rate`.
+- Added configurable delay between requests with `--delay`.
+- Added 2 new CORS detection rules.
+
+### Improved
+
+- Added more CORS payloads and reorganized payload formatting to improve test case coverage.
+- Improved origin fuzzing to support IP addresses in addition to HTTPS hostnames.

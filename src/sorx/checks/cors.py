@@ -1,5 +1,6 @@
 import time
 from urllib.parse import urlparse
+import tldextract
 
 from sorx.checks.cors_analyze import analyze
 from sorx.core.display import header
@@ -13,6 +14,8 @@ class Stat:
         self.mode, self.threads = mode, threads
         self.header = config.get("headers", {})
         self.scanned = 0
+        self.delay = config.get("delay")
+        self.rate = config.get("rate")
         self.findings = {url: [] for url in targets}
         self.errors = {url: [] for url in targets}
         self.start_time = time.time()
@@ -37,6 +40,45 @@ def create_job(
         "data": data,
         "timeout": timeout,
         "origin": origin or "",
+    }
+
+
+def get_trust_parts(url):
+    hostname = urlparse(url).hostname or ""
+
+    # IP address / localhost
+    if (
+        hostname == "localhost"
+        or all(part.isdigit() and 0 <= int(part) <= 255
+               for part in hostname.split("."))
+        and len(hostname.split(".")) == 4
+    ):
+        return {
+            "TRUST_HOSTNAME": hostname,
+            "TRUST_HOSTNAME_UPPERCASE": hostname.upper(),
+            "TRUST_DOMAIN": hostname,
+            "TRUST_DOMAIN_NAME": hostname,
+            "TRUST_SUBDOMAIN": "",
+        }
+
+    extracted = tldextract.extract(hostname)
+
+    domain_name = extracted.domain
+    suffix = extracted.suffix
+    subdomain = extracted.subdomain
+
+    domain = (
+        f"{domain_name}.{suffix}"
+        if suffix
+        else domain_name
+    )
+
+    return {
+        "TRUST_HOSTNAME": hostname,
+        "TRUST_HOSTNAME_UPPERCASE": hostname.upper(),
+        "TRUST_DOMAIN": domain,
+        "TRUST_DOMAIN_NAME": domain_name,
+        "TRUST_SUBDOMAIN": subdomain,
     }
 
 
@@ -76,10 +118,16 @@ def active(url, config, trust_hostname):
 
     jobs = []
 
-    for origin in get_payloads("origin", mode):
-        origin = origin.replace("{TRUST_HOSTNAME}", trust_hostname)
+    trust = get_trust_parts(url)
 
-        origin = origin.replace("{TRUST_HOSTNAME_UPPERCASE}", trust_hostname.upper())
+    for payload in get_payloads("origin", mode):
+        origin = payload
+
+        for key, value in trust.items():
+            origin = origin.replace(
+                f"{{{key}}}",
+                value
+            )
 
         jobs.append(
             create_job(
@@ -177,7 +225,7 @@ def run(urls, config, on_target_done=None):
         stat.request += len(jobs)
 
         # Send requests
-        results = requester_run(jobs=jobs, workers=workers)
+        results = requester_run(jobs=jobs, workers=workers, delay=config.get("delay"), rate=config.get("rate"))
 
         # Store raw requester output
         stat.results[url] = results

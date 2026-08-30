@@ -50,8 +50,8 @@ def build_flags():
     performance = parser.add_argument_group("PERFORMANCE")
     performance.add_argument("--timeout", dest="timeout", type=int, default=6, help="Request timeout in seconds (default: 6)")
     performance.add_argument("-t", "--thread", dest="thread", type=int, default=15, help="Number of threads (default: 15)")
-    performance.add_argument("--rate", dest="rate", type=int, help="Set request rate limit (requests/second)")
-    performance.add_argument("--delay", dest="delay", type=float, help="Set delay between requests (seconds)")
+    performance.add_argument("--delay", dest="delay", type=float, help="Delay between requests (in seconds)")
+    performance.add_argument("--rate", dest="rate", type=int, help="Maximum requests per second")
 
     # OPTIONS
     options = parser.add_argument_group("OPTIONS")
@@ -98,9 +98,19 @@ def is_valid_url(url):
         r"^https?://(?:(?:[A-Za-z0-9-]+\.)+[A-Za-z]{2,}|(?:\d{1,3}\.){3}\d{1,3})(?::\d{1,5})?(?:/[^\s]*)?$",
         re.IGNORECASE,
     )
+
     return bool(pattern.match(url))
 
 
+def normalize_url(url):
+    url = url.strip()
+
+    if not url.startswith(("http://", "https://")):
+        url = "http://" + url
+
+    return url
+
+    
 def load_targets(path):
     try:
         with open(path, "r", encoding="utf-8") as file:
@@ -125,13 +135,13 @@ def get_targets(args, parser):
         parser.error("arguments -u/--url and -l/--list cannot be used together")
 
     if args.url:
-        url = args.url.strip()
-
-        if not url:
-            parser.error("target URL cannot be empty")
+        url = normalize_url(args.url)
 
         if not is_valid_url(url):
-            parser.error(f"invalid target URL: {url}\ntarget must be a full HTTP/HTTPS URL")
+            parser.error(
+                f"invalid target URL: {args.url}\n"
+                "target must be a valid HTTP/HTTPS URL"
+            )
 
         return [url]
 
@@ -151,6 +161,8 @@ def build_config(args, headers):
         "data": args.data,
         "timeout": args.timeout,
         "workers": args.thread,
+        "delay": args.delay,
+        "rate": args.rate,
         "mode": args.mode,
         "output": args.output or args.json,
         "json": bool(args.json),
@@ -176,12 +188,6 @@ def main():
 
         if args.thread <= 0:
             parser.error("--thread must be greater than 0")
-
-        if args.rate is not None and args.rate <= 0:
-            parser.error("--rate must be greater than 0")
-
-        if args.delay is not None and args.delay < 0:
-            parser.error("--delay cannot be negative")
 
         if args.help:
             print(display.logo())
