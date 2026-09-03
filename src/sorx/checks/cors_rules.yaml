@@ -171,6 +171,69 @@ rules:
       response: |
         Access-Control-Allow-Methods: *
 
+  - id: CORS-303
+    title: Dynamic request method reflection
+    severity: info
+    description: >
+      The server dynamically reflects the requested HTTP method in
+      Access-Control-Allow-Methods during CORS preflight requests.
+    evidence: >
+      The requested method is included in Access-Control-Allow-Methods
+      in response to the corresponding Access-Control-Request-Method.
+    suggestion: >
+      Allow only the HTTP methods required by the application instead of
+      dynamically reflecting requested methods.
+    example:
+      request: |
+        Origin: https://attacker.example
+        Access-Control-Request-Method: DELETE
+      response: |
+        Access-Control-Allow-Origin: https://attacker.example
+        Access-Control-Allow-Methods: DELETE
+
+
+  - id: CORS-304
+    title: Dynamic request header reflection
+    severity: info
+    description: >
+      The server dynamically reflects requested headers in
+      Access-Control-Allow-Headers during CORS preflight requests.
+    evidence: >
+      The requested header is included in Access-Control-Allow-Headers
+      in response to the corresponding Access-Control-Request-Headers.
+    suggestion: >
+      Allow only the request headers required by the application instead
+      of dynamically reflecting requested headers.
+    example:
+      request: |
+        Origin: https://attacker.example
+        Access-Control-Request-Method: POST
+        Access-Control-Request-Headers: X-Custom-Header
+      response: |
+        Access-Control-Allow-Origin: https://attacker.example
+        Access-Control-Allow-Headers: X-Custom-Header
+
+
+  - id: CORS-305
+    title: Dynamic origin reflection without Vary
+    severity: low
+    description: >
+      The server dynamically reflects the Origin in
+      Access-Control-Allow-Origin but does not include Vary: Origin,
+      which may cause incorrect caching of CORS responses.
+    evidence: >
+      Access-Control-Allow-Origin reflects the supplied Origin while
+      the response does not include Vary: Origin.
+    suggestion: >
+      Include Vary: Origin when dynamically generating
+      Access-Control-Allow-Origin responses and ensure CORS responses
+      are correctly handled by intermediary caches.
+    example:
+      request: |
+        Origin: https://attacker.example
+      response: |
+        Access-Control-Allow-Origin: https://attacker.example
+
 
   ###########################################
   ## Exposed Response Headers ##############
@@ -327,3 +390,60 @@ rules:
         Access-Control-Allow-Origin: https://attacker.example
         Access-Control-Allow-Credentials: true
         Access-Control-Allow-Methods: *
+
+  - id: CORS-903
+    title: Origin reflection with credentials and wildcard permissions
+    severity: high
+    description: >
+      The server reflects an attacker-controlled origin, allows
+      credentials, and permits wildcard request methods or headers
+      through CORS.
+    evidence: >
+      The supplied Origin is reflected, credentials are allowed,
+      and Access-Control-Allow-Methods or Access-Control-Allow-Headers
+      is set to '*'.
+    suggestion: >
+      Restrict allowed origins and credentials, and replace wildcard
+      methods or headers with an explicit allowlist of required values.
+    note: >
+      If the target validates the origin against a trusted domain,
+      replace the example origin with a domain trusted by the target.
+    example:
+      request: |
+        Origin: https://attacker.example
+        Access-Control-Request-Method: DELETE
+        Access-Control-Request-Headers: X-Custom-Header
+      response: |
+        Access-Control-Allow-Origin: https://attacker.example
+        Access-Control-Allow-Credentials: true
+        Access-Control-Allow-Methods: *
+        Access-Control-Allow-Headers: *
+
+  - id: CORS-904
+    title: Origin reflection with credentials and sensitive headers
+    severity: high
+    description: >
+      The server reflects an attacker-controlled origin, allows
+      credentials, and permits sensitive request headers while exposing
+      sensitive response headers through CORS.
+    evidence: >
+      The supplied Origin is reflected, credentials are allowed,
+      one or more sensitive request headers are permitted by
+      Access-Control-Allow-Headers, and one or more sensitive response
+      headers are exposed through Access-Control-Expose-Headers.
+    suggestion: >
+      Restrict allowed origins and credentials, and avoid permitting
+      or exposing sensitive headers to untrusted origins unless
+      strictly required.
+    note: >
+      If the target validates the origin against a trusted domain,
+      replace the example origin with a domain trusted by the target.
+    example:
+      request: |
+        Origin: https://attacker.example
+        Access-Control-Request-Headers: Authorization
+      response: |
+        Access-Control-Allow-Origin: https://attacker.example
+        Access-Control-Allow-Credentials: true
+        Access-Control-Allow-Headers: Authorization
+        Access-Control-Expose-Headers: X-Auth-Token

@@ -1,3 +1,8 @@
+# TRUST_DOMAIN = example.com
+# TRUST_HOSTNAME = api.example.com
+# TRUST_SUBDOMAIN = api
+# TRUST_DOMAIN_NAME = example
+
 origin:
   high_priority:
     - "https://attacker.com"

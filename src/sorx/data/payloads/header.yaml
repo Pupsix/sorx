@@ -5,10 +5,12 @@ header:
     - "X-Requested-With"
 
   medium_priority:
-    - "X-CSRF-Token"
     - "X-API-Key"
     - "X-Auth-Token"
-    - "X-Requested-With"
+    - "X-Access-Token"
+    - "X-Refresh-Token"
+    - "X-CSRF-Token"
 
   low_priority:
+    - "X-Client-ID"
     - "X-Custom-Header"

@@ -75,6 +75,21 @@ def analyze(response, task):
     if "*" in allowed_methods:
         findings.append(("CORS-302", "Wildcard request methods"))
 
+    if task.get("request_method"):
+        requested_method = task["request_method"].strip().upper()
+        if (requested_method in allowed_methods and "*" not in allowed_methods):
+            findings.append(("CORS-303", "Dynamic request method reflection"))
+
+    if task.get("request_headers"):
+        requested_headers = parse_csv(task["request_headers"], str.lower,)
+
+        if (requested_headers and requested_headers <= allowed_headers and "*" not in allowed_headers):
+            findings.append(("CORS-304", "Dynamic request header reflection"))
+
+    vary = headers.get("Vary", "")
+    if (origin_reflection and "origin" not in parse_csv(vary, str.lower)):
+        findings.append(("CORS-305", "Dynamic origin reflection without Vary"))
+        
     found_sensitive_response_header = bool(exposed_headers & sensitive_response_headers)
     if found_sensitive_response_header:
         findings.append(("CORS-400", "Sensitive response header exposed"))
@@ -91,5 +106,11 @@ def analyze(response, task):
 
         if "*" in allowed_methods or found_sensitive_method:
             findings.append(("CORS-902", "Origin reflection with credentials and broad methods"))
+
+        if "*" in allowed_methods or "*" in allowed_headers:
+            findings.append(("CORS-903", "Origin reflection with credentials and wildcard permissions"))
+
+        if found_sensitive_request_header and found_sensitive_response_header:
+            findings.append(("CORS-904", "Origin reflection with credentials and sensitive headers"))
 
     return findings

@@ -4,7 +4,7 @@
 
 ### 🔴 Core Reliability
 
-* [ ] Improve existing CORS checks
+* [x] Improve existing CORS checks
 * [ ] Add vulnerable and safe test cases
 * [ ] Reduce duplicate findings
 * [ ] Reduce false positives
@@ -13,8 +13,8 @@
 
 * [ ] Add more Origin edge cases
 * [ ] Origin normalization
-* [ ] Preflight analysis
-* [ ] `Vary: Origin` analysis
+* [x] Preflight analysis
+* [x] `Vary: Origin` analysis
 
 ### 🟡 Finding Quality
 

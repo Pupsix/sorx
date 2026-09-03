@@ -31,7 +31,9 @@ def create_job(
     headers=None,
     data=None,
     timeout=10,
-    origin=None
+    origin=None,
+    request_method=None,
+    request_headers=None,
 ):
     return {
         "url": url,
@@ -40,8 +42,9 @@ def create_job(
         "data": data,
         "timeout": timeout,
         "origin": origin or "",
+        "request_method": request_method,
+        "request_headers": request_headers,
     }
-
 
 def get_trust_parts(url):
     hostname = urlparse(url).hostname or ""
@@ -82,21 +85,33 @@ def get_trust_parts(url):
     }
 
 
-def get_payloads(name, mode):
-    payloads = load_payload(name).get(name, {})
-
+def get_payloads(mode):
     priority_map = {
         "quick": ["high_priority"],
         "normal": ["high_priority", "medium_priority"],
         "deep": ["high_priority", "medium_priority", "low_priority"],
     }
 
-    result = []
+    priorities = priority_map.get(mode, [])
 
-    for priority in priority_map.get(mode, []):
-        result.extend(payloads.get(priority, []))
+    origin = load_payload("origin").get("origin", {})
+    header = load_payload("header").get("header", {})
+    method = load_payload("method").get("method", {})
 
-    return result
+    origin_payloads = []
+    header_payloads = []
+    method_payloads = []
+
+    for priority in priorities:
+        origin_payloads.extend(origin.get(priority, []))
+        header_payloads.extend(header.get(priority, []))
+        method_payloads.extend(method.get(priority, []))
+
+    return {
+        "origin": origin_payloads,
+        "header": header_payloads,
+        "method": method_payloads,
+    }
 
 
 def passive(url, config):
@@ -113,49 +128,122 @@ def passive(url, config):
 
 def active(url, config, trust_hostname):
     mode = config.get("mode")
-    timeout = config.get("timeout", 10)
     base_headers = config.get("headers", {})
-
     jobs = []
-
     trust = get_trust_parts(url)
+    payloads = get_payloads(mode)
 
-    for payload in get_payloads("origin", mode):
+    origin_payloads = payloads["origin"]
+    header_payloads = payloads["header"]
+    method_payloads = payloads["method"]
+
+    # Simple requests
+    for payload in origin_payloads:
         origin = payload
 
         for key, value in trust.items():
-            origin = origin.replace(
-                f"{{{key}}}",
-                value
-            )
+            origin = origin.replace(f"{{{key}}}", value)
 
         jobs.append(
             create_job(
                 url=url,
                 method="GET",
-                headers={
-                    **base_headers,
-                    "Origin": origin
-                },
-                timeout=timeout,
-                origin=origin
+                headers={**base_headers, "Origin": origin},
+                origin=origin,
             )
         )
 
-    jobs.append(
-        create_job(
-            url=url,
-            method="OPTIONS",
-            headers={
-                **base_headers,
-                "Origin": "https://attacker.example",
-                "Access-Control-Request-Method": "POST",
-                "Access-Control-Request-Headers": "Authorization",
-            },
-            timeout=timeout,
-            origin="https://attacker.example",
+    # Preflight requests
+    attacker_origin = "https://attacker.example"
+
+    if not mode:
+        return jobs
+
+    if mode == "quick":
+        jobs.append(
+            create_job(
+                url=url,
+                method="OPTIONS",
+                headers={
+                    **base_headers,
+                    "Origin": attacker_origin,
+                    "Access-Control-Request-Method": "POST",
+                    "Access-Control-Request-Headers": "Authorization",
+                },
+                origin=attacker_origin,
+                request_method="POST",
+                request_headers="Authorization",
+            )
         )
-    )
+
+    elif mode == "normal":
+        jobs.extend([
+            create_job(
+                url=url,
+                method="OPTIONS",
+                headers={
+                    **base_headers,
+                    "Origin": attacker_origin,
+                    "Access-Control-Request-Method": "POST",
+                    "Access-Control-Request-Headers": "Authorization",
+                },
+                origin=attacker_origin,
+                request_method="POST",
+                request_headers="Authorization",
+            ),
+            create_job(
+                url=url,
+                method="OPTIONS",
+                headers={
+                    **base_headers,
+                    "Origin": attacker_origin,
+                    "Access-Control-Request-Method": "PUT",
+                    "Access-Control-Request-Headers": "Content-Type",
+                },
+                origin=attacker_origin,
+                request_method="PUT",
+                request_headers="Content-Type",
+            ),
+        ])
+
+    elif mode == "deep":
+        preflight_jobs = []
+
+        for method in method_payloads[:3]:
+            preflight_jobs.append(
+                create_job(
+                    url=url,
+                    method="OPTIONS",
+                    headers={
+                        **base_headers,
+                        "Origin": attacker_origin,
+                        "Access-Control-Request-Method": method,
+                    },
+                    origin=attacker_origin,
+                    request_method=method,
+                )
+            )
+
+        remaining = 5 - len(preflight_jobs)
+
+        for header in header_payloads[:remaining]:
+            preflight_jobs.append(
+                create_job(
+                    url=url,
+                    method="OPTIONS",
+                    headers={
+                        **base_headers,
+                        "Origin": attacker_origin,
+                        "Access-Control-Request-Method": "POST",
+                        "Access-Control-Request-Headers": header,
+                    },
+                    origin=attacker_origin,
+                    request_method="POST",
+                    request_headers=header,
+                )
+            )
+
+        jobs.extend(preflight_jobs)
 
     return jobs
 

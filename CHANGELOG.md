@@ -45,3 +45,19 @@
 
 - Added more CORS payloads and reorganized payload formatting to improve test case coverage.
 - Improved origin fuzzing to support IP addresses in addition to HTTPS hostnames.
+
+## [0.2.1] - 2026-09-03
+
+### Added
+
+* Added preflight CORS analysis.
+* Added detection for dynamic request method reflection.
+* Added detection for dynamic request header reflection.
+* Added `Vary: Origin` analysis.
+* Added additional CORS combination checks for wildcard permissions and sensitive headers.
+
+### Improved
+
+* Improved CORS detection coverage with additional preflight checks.
+* Improved finding correlation between origin, credentials, request headers, response headers, and allowed methods.
+* Improved deep mode preflight coverage while limiting unnecessary requests.
