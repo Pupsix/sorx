@@ -8,10 +8,10 @@ security-relevant CORS issues with a focus on **low noise and useful findings**.
 
 ![sorx UI](https://raw.githubusercontent.com/Pupsix/sorx/main/docs/demo.gif)
 
-> [!WARNING]
-> **sorx is currently under active development.**
-> 
-> This is an early test release. Features, detection rules, output formats, and CLI behavior may change in future versions.
+> [!NOTE]
+> **sorx is under active development.**
+>
+> The project is ready for real-world use, but it is not yet considered mature. Features, detection rules, output formats, and CLI behavior may change in future releases.
 
 ## Features
 
